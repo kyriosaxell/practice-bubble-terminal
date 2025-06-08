@@ -71,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.listIndex < len(m.notes)-1 {
 					m.listIndex++
 				}
-			case "enter":
+			case tea.KeyEnter.String():
 				m.currNote = m.notes[m.listIndex]
 				m.textArea.SetValue(m.currNote.Body)
 				m.textArea.Focus()
@@ -80,7 +80,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case titleView:
 			switch key {
-			case "enter":
+			case tea.KeyEnter.String():
 				title := m.textInput.Value()
 				if title != "" {
 					m.currNote.Title = title
@@ -95,7 +95,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case bodyView:
 			switch key {
-			case "ctrl+s":
+			case tea.KeyCtrlS.String():
 				body := m.textArea.Value()
 				m.currNote.Body = body
 
@@ -110,7 +110,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.currNote = Note{} // Reinicia la nota actual
 				m.state = listView
-			case "esc":
+			case tea.KeyCtrlQ.String():
 				m.state = listView
 			}
 		}

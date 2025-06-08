@@ -18,13 +18,13 @@ func (m Model) View() string {
 	if m.state == titleView {
 		s += "Título de la nota:\n\n"
 		s += m.textInput.View() + "\n\n"
-		s += faintStyle.Render("enter - guardar • esc - descartar")
+		s += faintStyle.Render("enter - guardar • ctrl+q - descartar")
 	}
 
 	if m.state == bodyView {
 		s += "Note:\n\n"
 		s += m.textArea.View() + "\n\n"
-		s += faintStyle.Render("ctrl+s - guardar • esc - descartar")
+		s += faintStyle.Render("ctrl+s - guardar • ctrl+q - descartar")
 	}
 
 	if m.state == listView {
