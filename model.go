@@ -62,12 +62,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue("")
 				m.textInput.Placeholder = "Escribe el título de la nota"
 				m.textInput.Focus()
+				m.textInput.CharLimit = 100
 				m.state = titleView
-			case "up", "k":
+			case tea.KeyUp.String(), "k":
 				if m.listIndex > 0 {
 					m.listIndex--
 				}
-			case "down", "j":
+			case tea.KeyDown.String(), "j":
 				if m.listIndex < len(m.notes)-1 {
 					m.listIndex++
 				}
@@ -90,7 +91,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					m.state = bodyView
 				}
-			case "esc":
+			case tea.KeyCtrlQ.String(): // Por alguna razón 'esc' no funciona con la terminal de Jetbrains y Alacritty.
 				m.state = listView
 			}
 		case bodyView:
