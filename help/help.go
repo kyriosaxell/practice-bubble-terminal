@@ -12,6 +12,7 @@ import (
 )
 
 var outputTitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#0589ea")).Bold(true)
+var helpViewStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#c3a62e")).Bold(true)
 
 // keyMap define un set de keybindings.
 type keyMap struct {
@@ -21,6 +22,7 @@ type keyMap struct {
 	Right key.Binding
 	Enter key.Binding
 	Help  key.Binding
+	Hide  key.Binding
 	Quit  key.Binding
 }
 
@@ -35,10 +37,11 @@ func (k keyMap) ShortHelp() []key.Binding {
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Left, k.Right}, // Primera columna
-		{k.Help, k.Quit},                // Segunda columna
+		{k.Hide, k.Quit},                // Segunda columna
 	}
 }
 
+// keys almacena el keyMap con combinaciones de teclas predefinidas y sus correspondientes descripciones de ayuda.
 var keys = keyMap{
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"), // Binding con teclas flecha arriba y 'k' estilo vim.
@@ -60,6 +63,10 @@ var keys = keyMap{
 		key.WithKeys("?"),
 		key.WithHelp("?", "muestra la ayuda"),
 	),
+	Hide: key.NewBinding(
+		key.WithKeys("o", "O"),
+		key.WithHelp("o/O", "oculta la ayuda"),
+	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "esc", "ctrl+c"),
 		key.WithHelp("q", "salir"),
@@ -67,18 +74,28 @@ var keys = keyMap{
 }
 
 type model struct {
-	keys       keyMap
-	help       help.Model
-	inputStyle lipgloss.Style
-	lastKey    string
-	quitting   bool
+	keys             keyMap
+	help             help.Model
+	expandedHelpView bool
+	inputStyle       lipgloss.Style
+	helpViewStyle    lipgloss.Style
+	lastKey          string
+	quitting         bool
 }
 
-// newModel
+// newModel regresa un modelo
 func newModel() model {
+
+	// Estilos para los textos del menú de ayuda.
+	h := help.New()
+	h.Styles = help.Styles{
+		ShortKey:  helpViewStyle,
+		ShortDesc: helpViewStyle,
+	}
+
 	return model{
 		keys: keys,
-		help: help.New(),
+		help: h,
 		inputStyle: lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFFFF")).
 			Background(lipgloss.Color("#063970")).
@@ -109,6 +126,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastKey = "→"
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
+
+			m.keys.Help.SetEnabled(false)
+			m.keys.Hide.SetEnabled(true)
+		case key.Matches(msg, m.keys.Hide):
+			m.help.ShowAll = !m.help.ShowAll
+
+			m.keys.Help.SetEnabled(true)
+			m.keys.Hide.SetEnabled(false)
 		case key.Matches(msg, m.keys.Quit):
 			m.quitting = true
 			return m, tea.Quit
@@ -130,14 +155,19 @@ func (m model) View() string {
 		status = "Tecleaste: " + m.inputStyle.Render(m.lastKey)
 	}
 
-	vp := viewport.New(60, 5)
+	vp := viewport.New(130, 5)
 	vp.SetContent(
-		outputTitleStyle.Width(vp.Width).Render("\nBienvenido a la ayuda de Charm! Brace yourself 🔬, esto es un poco complicado. \n\n"),
+		outputTitleStyle.Width(vp.Width).Render("\nBienvenido a la ayuda de Charm! Brace yourself 🥸," +
+			" esto es un poco complicado. \n\n"),
 	)
 
 	helpView := m.help.View(m.keys)
-	height := 8 - strings.Count(status, "\n") - strings.Count(helpView, "\n")
-	return vp.View() + "\n" + status + "\n" + strings.Repeat("\n", height) + helpView
+	styledHelpView := helpViewStyle.Render(helpView)
+	height := 4 - strings.Count(status, "\n") - strings.Count(helpView, "\n")
+	return vp.View() +
+		"\n" + status +
+		"\n" + strings.Repeat("\n", height) +
+		styledHelpView // Textos del menú de ayuda
 }
 
 func main() {
@@ -147,7 +177,10 @@ func main() {
 			fmt.Println("No se pudo abrir el archivo para logging:", err)
 			os.Exit(1)
 		}
-		defer f.Close()
+
+		defer func(f *os.File) {
+			_ = f.Close()
+		}(f)
 	}
 
 	if _, err := tea.NewProgram(newModel()).Run(); err != nil {
